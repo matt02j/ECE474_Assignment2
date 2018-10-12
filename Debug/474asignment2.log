@@ -1,5 +1,7 @@
 ﻿  474asignment2.cpp
-c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(110): warning C4018: '<': signed/unsigned mismatch
-c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(113): warning C4018: '<': signed/unsigned mismatch
-c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(116): warning C4018: '<': signed/unsigned mismatch
+c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(79): warning C4018: '<': signed/unsigned mismatch
+c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(87): warning C4018: '<': signed/unsigned mismatch
+c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(136): warning C4018: '<': signed/unsigned mismatch
+c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(139): warning C4018: '<': signed/unsigned mismatch
+c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(142): warning C4018: '<': signed/unsigned mismatch
   474asignment2.vcxproj -> C:\Users\matt0\source\repos\474asignment2\Debug\474asignment2.exe

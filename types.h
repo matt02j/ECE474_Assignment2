@@ -6,11 +6,10 @@ enum OPS { ADD, SUB, MUL, DIV, MUX, LSHIFT, RSHIFT, GT, LT, EQ, BAD};
 
 
 class Input {
-private:
+public:
 	string name;
 	int size;
 	bool isSigned;
-public:
 	Input() {
 		name = "";
 		size = 0;
@@ -27,11 +26,10 @@ public:
 
 };
 class Output {
-private:
+public:
 	string name;
 	int size;
 	bool isSigned;
-public:
 	Output() {
 		name = "";
 		size = 0;
@@ -48,12 +46,10 @@ public:
 
 };
 class Wire {
-private:
+public:
 	string name;
 	int size;
 	bool isSigned;
-
-public:
 	Wire() {
 		name = "";
 		size = 0;
