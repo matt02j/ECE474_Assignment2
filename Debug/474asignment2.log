@@ -1,7 +1,8 @@
 ﻿  474asignment2.cpp
-c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(79): warning C4018: '<': signed/unsigned mismatch
-c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(87): warning C4018: '<': signed/unsigned mismatch
-c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(136): warning C4018: '<': signed/unsigned mismatch
-c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(139): warning C4018: '<': signed/unsigned mismatch
-c:\users\matt0\source\repos\474asignment2\474asignment2\474asignment2.cpp(142): warning C4018: '<': signed/unsigned mismatch
-  474asignment2.vcxproj -> C:\Users\matt0\source\repos\474asignment2\Debug\474asignment2.exe
+c:\users\mcjohnson\documents\ece474_assignment2\474asignment2.cpp(82): warning C4018: '<': signed/unsigned mismatch
+c:\users\mcjohnson\documents\ece474_assignment2\474asignment2.cpp(90): warning C4018: '<': signed/unsigned mismatch
+c:\users\mcjohnson\documents\ece474_assignment2\474asignment2.cpp(151): warning C4018: '<': signed/unsigned mismatch
+c:\users\mcjohnson\documents\ece474_assignment2\474asignment2.cpp(154): warning C4018: '<': signed/unsigned mismatch
+c:\users\mcjohnson\documents\ece474_assignment2\474asignment2.cpp(157): warning C4018: '<': signed/unsigned mismatch
+  474asignment2.vcxproj -> C:\Users\MCJohnson\Documents\ECE474_Assignment2\Debug\474asignment2.exe
+  474asignment2.vcxproj -> C:\Users\MCJohnson\Documents\ECE474_Assignment2\Debug\474asignment2.pdb (Partial PDB)
