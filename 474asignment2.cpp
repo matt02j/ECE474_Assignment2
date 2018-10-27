@@ -30,6 +30,8 @@ OPS parseOp(string myop);
 void writeInputInits(vector<Input> inputs, shared_ptr<ofstream> verilogFile);
 void writeOutputInits(vector<Output> outputs, shared_ptr<ofstream> verilogFile);
 void writeWireInits(vector<Wire> wires, shared_ptr<ofstream> verilogFile);
+void writeModuleHeading(vector<Input> inputs, vector<Output> outputs, shared_ptr<ofstream> verilogFile, string moduleName);
+void writeModuleClosing(shared_ptr<ofstream> verilogFile);
 
 int main(int argc, char* argv[]){
 	 string netlistFileName, verilogFileName;
@@ -40,6 +42,7 @@ int main(int argc, char* argv[]){
 	 vector<Input> inputs;
 	 vector<Output> outputs;
 	 vector<Wire> wires;
+	 string moduleName = "outputModule";
 
 	 int numAdders=0;
 	 int numComps=0;
@@ -48,6 +51,7 @@ int main(int argc, char* argv[]){
 	 int numMuxs=0;
 	 int numRShifts=0;
 	 int numLShifts=0;
+	 int numRegs = 0;
 
 	if (argc != 3) {
 		cout << "Usage: dpgen netlistFile verilogFile"<<endl;
@@ -85,6 +89,7 @@ int main(int argc, char* argv[]){
 		}
 		else { //assignment
 			if (!finishedInits) {
+				writeModuleHeading(inputs, outputs, verilogFile, moduleName);
 				writeInputInits(inputs, verilogFile);
 				writeOutputInits(outputs, verilogFile);
 				writeWireInits(wires, verilogFile);
@@ -93,86 +98,102 @@ int main(int argc, char* argv[]){
 
 			string op, assign, first, second;
 			stream >> assign >> first;
-			if (stream.eof()) {
-				//assignment
-				*verilogFile << seg1 << " = " << first << ";" << endl;
+
+			//OPS myop;
+			/*if (stream.eof()) {
+				myop = REG;
+			}*/
+			stream >> op >> second;
+			OPS myop = parseOp(op);
+			int size=0;
+			bool isSigned=false;
+			for (unsigned int i = 0; i < outputs.size(); i++) {
+				if (outputs.at(i).name == seg1) {
+					size = outputs.at(i).size;
+					isSigned = outputs.at(i).isSigned;
+					break;
+				}
 			}
-			else {
-				stream >> op >> second;
-				OPS myop = parseOp(op);
-				int size=0;
-				bool isSigned=false;
-				for (unsigned int i = 0; i < outputs.size(); i++) {
-					if (outputs.at(i).name == seg1) {
-						size = outputs.at(i).size;
-						isSigned = outputs.at(i).isSigned;
+			if (size == 0) {
+				for (unsigned int i = 0; i < wires.size(); i++) {
+					if (wires.at(i).name == seg1) {
+						size = wires.at(i).size;
+						isSigned = wires.at(i).isSigned;
 						break;
 					}
 				}
-				if (size == 0) {
-					for (unsigned int i = 0; i < wires.size(); i++) {
-						if (wires.at(i).name == seg1) {
-							size = wires.at(i).size;
-							isSigned = wires.at(i).isSigned;
-							break;
-						}
-					}
-				}
-				if (size == 0) {
-					cerr << "Unable to find output " << seg1 << endl;
-					return 1;
-				}
-				if (!isSigned) {
-					*verilogFile << "U";
-				}
-				switch (myop) {
-				case ADD:
-					*verilogFile << "ADD #(" << size <<") adder_"<< numAdders<<"(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
+			}
+			/*
+			if (size == 0) {
+				cerr << "Unable to find output " << seg1 << endl;
+				return 1;
+			}
+			*/
+			if (!isSigned) {
+				*verilogFile << "U";
+			}
+			switch (myop) {
+				case ADD: {
+					*verilogFile << "\t" << "ADD #(" << size <<") adder_"<< numAdders<<"(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
 					numAdders++;
 					break;
-				case SUB:
-					*verilogFile << "SUB #(" << size << ") sub_" << numSubs << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
+				}
+				case SUB: {
+					*verilogFile << "\t" << "SUB #(" << size << ") sub_" << numSubs << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
 					numSubs++;
 					break;
-				case MUL:
-					*verilogFile << "MUL #(" << size << ") mul_" << numAdders << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
+				}
+				case MUL: {
+					*verilogFile << "\t" << "MUL #(" << size << ") mul_" << numAdders << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
 					numMuls++;
 					break;
-				case DIV:
+				}
+				case DIV: {
 					//turns out we dont need this for 474
 					break;
-				case GT:
-					*verilogFile << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << ", , ," << seg1 << ");" << endl;  //is this legal? probably not
+				}
+				case GT: {
+					*verilogFile << "\t" << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << ", , ," << seg1 << ");" << endl;  //is this legal? probably not
 					numComps++;
 					break;
-				case LT:	
-					*verilogFile << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << "," << seg1 << ", , );" << endl;  //is this legal? probably not
+				}
+				case LT: {
+					*verilogFile << "\t" << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << "," << seg1 << ", , );" << endl;  //is this legal? probably not
 					numComps++;
 					break;
-				case EQ:
-					*verilogFile << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << ", ," << seg1 << ", );" << endl;  //is this legal? probably not
+				}
+				case EQ: {
+					*verilogFile << "\t" << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << ", ," << seg1 << ", );" << endl;  //is this legal? probably not
 					numComps++;
 					break;
-				case RSHIFT:
-					*verilogFile << "SHR #(" << size << ") shr_" << numRShifts << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
+				}
+				case RSHIFT: {
+					*verilogFile << "\t" << "SHR #(" << size << ") shr_" << numRShifts << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
 					numRShifts++;
 					break;
-				case LSHIFT:
-					*verilogFile << "SHL #(" << size << ") mul_" << numLShifts << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
+				}
+				case LSHIFT: {
+					*verilogFile << "\t" << "SHL #(" << size << ") mul_" << numLShifts << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
 					numLShifts++;
 					break;
-				case MUX:
+				}
+				case MUX: {
 					string colon, third;
 					stream >> colon >> third;
-					*verilogFile << "MUX #(" << size << ") mux_" << numMuxs << "(" << first << ", " << second << ", " << third << ", "<< seg1 << ");" << endl;  //TODO change to verilog file
+					*verilogFile << "\t" << "MUX #(" << size << ") mux_" << numMuxs << "(" << first << ", " << second << ", " << third << ", "<< seg1 << ");" << endl;  //TODO change to verilog file
 					numMuxs++;
+					break;
+				}
+				case REG: {
+					*verilogFile << "\t" << "REG #(" << size << ") reg_" << numRegs << "(" << "Clk, Rst, " << first << ", " << seg1 << ");" << endl;
+					numRegs++;
 					break;
 				}
 			}
 		}
-		
-
 	}
+	writeModuleClosing(verilogFile);
+
 	for (unsigned int i = 0; i < inputs.size(); i++) {
 		cout << inputs.at(i).toString() << endl;
 	}
@@ -294,25 +315,61 @@ OPS parseOp(string myop) {
 	else if (myop == "==") {
 		return EQ;
 	}
+	else if (myop == "") {
+		return REG;
+	}
 	else {
 		return BAD;
 	}
 }
 
 void writeInputInits(vector<Input> inputs, shared_ptr<ofstream> verilogFile) {
+	*verilogFile << "\t" << "input Clk, Rst;" << endl;
 	for (unsigned int i = 0; i < inputs.size(); i++) {
-		*verilogFile << "input [" << inputs[i].size - 1 << ":0] " << inputs[i].name << ";" << endl;
+		if (inputs[i].name.size() > 0) {
+			*verilogFile << "\t" << "input [" << inputs[i].size - 1 << ":0] " << inputs[i].name << ";" << endl;
+		}
 	}
 }
 
 void writeOutputInits(vector<Output> outputs, shared_ptr<ofstream> verilogFile) {
 	for (unsigned int i = 0; i < outputs.size(); i++) {
-		*verilogFile << "output [" << outputs[i].size - 1 << ":0] " << outputs[i].name << ";" << endl;
+		if (outputs[i].name.size() > 0) {
+			*verilogFile << "\t" << "output [" << outputs[i].size - 1 << ":0] " << outputs[i].name << ";" << endl;
+		}
 	}
 }
 
 void writeWireInits(vector<Wire> wires, shared_ptr<ofstream> verilogFile) {
 	for (unsigned int i = 0; i < wires.size(); i++) {
-		*verilogFile << "wire [" << wires[i].size - 1 << ":0] " << wires[i].name << ";" << endl;
+		if (wires[i].name.size() > 0) {
+			*verilogFile << "\t" << "wire [" << wires[i].size - 1 << ":0] " << wires[i].name << ";" << endl;
+		}
 	}
+}
+
+void writeModuleHeading(vector<Input> inputs, vector<Output> outputs, shared_ptr<ofstream> verilogFile, string moduleName) {
+	*verilogFile << "module " << moduleName << "(";
+	for (unsigned int i = 0; i < inputs.size(); i++) {
+		if (inputs[i].name.size() > 0) {
+			*verilogFile << inputs[i].name;
+			if (i < inputs.size() - 1 || outputs.size() > 0) {
+				*verilogFile << ", ";
+			}
+		}
+	}
+	for (unsigned int i = 0; i < outputs.size(); i++) {
+		if (outputs[i].name.size() > 0) {
+			*verilogFile << outputs[i].name;
+			if (i < outputs.size() - 1) {
+				*verilogFile << ", ";
+			}
+		}
+	}
+
+	*verilogFile << ");" << endl;
+}
+
+void writeModuleClosing(shared_ptr<ofstream> verilogFile) {
+	*verilogFile << "endmodule" << endl;
 }

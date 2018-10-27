@@ -1,8 +1,8 @@
-#ifndef  TYPES_H
+﻿#ifndef  TYPES_H
 #define TYPES_H
 using namespace std;
 
-enum OPS { ADD, SUB, MUL, DIV, MUX, LSHIFT, RSHIFT, GT, LT, EQ, BAD};
+enum OPS { ADD, SUB, MUL, DIV, MUX, LSHIFT, RSHIFT, GT, LT, EQ, REG, BAD};
 
 
 class Input {
