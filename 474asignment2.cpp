@@ -32,6 +32,7 @@ void writeOutputInits(vector<Output> outputs, shared_ptr<ofstream> verilogFile);
 void writeWireInits(vector<Wire> wires, shared_ptr<ofstream> verilogFile);
 void writeModuleHeading(vector<Input> inputs, vector<Output> outputs, shared_ptr<ofstream> verilogFile, string moduleName);
 void writeModuleClosing(shared_ptr<ofstream> verilogFile);
+string checkValid(string varName, vector<Input> inputs, vector<Output> outputs, vector<Wire> wires);
 
 int main(int argc, char* argv[]){
 	 string netlistFileName, verilogFileName;
@@ -68,7 +69,7 @@ int main(int argc, char* argv[]){
 	//convert to cdfg
 
 	bool finishedInits = false;
-	while (!netlistFile.eof()) {
+	while (!(netlistFile.eof())) {
 		seg1.clear();
 		buffer.clear();
 		stream.clear();
@@ -84,7 +85,7 @@ int main(int argc, char* argv[]){
 		else if (seg1 == "output") { //output declaration
 			parseOutputs(&stream, &outputs);
 		}
-		else if (seg1 == "wire") { //wire declaration
+		else if (seg1 == "wire" || seg1 == "register") { //wire declaration
 			parseWires(&stream, &wires);
 		}
 		else { //assignment
@@ -129,22 +130,51 @@ int main(int argc, char* argv[]){
 				return 1;
 			}
 			*/
-			if (!isSigned) {
-				*verilogFile << "U";
+
+			if (myop != BAD) {
+				string validStr = "good";
+				validStr = checkValid(first, inputs, outputs, wires);
+				if (validStr != "good") {
+					cout << validStr;
+					netlistFile.close();
+					verilogFile->close();
+					return 0;
+				}
+				validStr = checkValid(seg1, inputs, outputs, wires);
+				if (validStr != "good") {
+					cout << validStr;
+					netlistFile.close();
+					verilogFile->close();
+					return 0;
+				}
+				if (myop != REG) {
+					validStr = checkValid(second, inputs, outputs, wires);
+					if (validStr != "good") {
+						cout << validStr;
+						netlistFile.close();
+						verilogFile->close();
+						return 0;
+					}
+				}
+			}
+
+			*verilogFile << "\t";
+			if (isSigned) {
+				*verilogFile << "S";
 			}
 			switch (myop) {
 				case ADD: {
-					*verilogFile << "\t" << "ADD #(" << size <<") adder_"<< numAdders<<"(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
+					*verilogFile << "ADD #(" << size <<") adder_"<< numAdders<<"(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
 					numAdders++;
 					break;
 				}
 				case SUB: {
-					*verilogFile << "\t" << "SUB #(" << size << ") sub_" << numSubs << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
+					*verilogFile << "SUB #(" << size << ") sub_" << numSubs << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
 					numSubs++;
 					break;
 				}
 				case MUL: {
-					*verilogFile << "\t" << "MUL #(" << size << ") mul_" << numAdders << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
+					*verilogFile << "MUL #(" << size << ") mul_" << numAdders << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
 					numMuls++;
 					break;
 				}
@@ -153,47 +183,61 @@ int main(int argc, char* argv[]){
 					break;
 				}
 				case GT: {
-					*verilogFile << "\t" << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << ", , ," << seg1 << ");" << endl;  //is this legal? probably not
+					*verilogFile << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << ", , ," << seg1 << ");" << endl;  //is this legal? probably not
 					numComps++;
 					break;
 				}
 				case LT: {
-					*verilogFile << "\t" << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << "," << seg1 << ", , );" << endl;  //is this legal? probably not
+					*verilogFile << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << "," << seg1 << ", , );" << endl;  //is this legal? probably not
 					numComps++;
 					break;
 				}
 				case EQ: {
-					*verilogFile << "\t" << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << ", ," << seg1 << ", );" << endl;  //is this legal? probably not
+					*verilogFile << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << ", ," << seg1 << ", );" << endl;  //is this legal? probably not
 					numComps++;
 					break;
 				}
 				case RSHIFT: {
-					*verilogFile << "\t" << "SHR #(" << size << ") shr_" << numRShifts << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
+					*verilogFile << "SHR #(" << size << ") shr_" << numRShifts << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
 					numRShifts++;
 					break;
 				}
 				case LSHIFT: {
-					*verilogFile << "\t" << "SHL #(" << size << ") mul_" << numLShifts << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
+					*verilogFile << "SHL #(" << size << ") mul_" << numLShifts << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
 					numLShifts++;
 					break;
 				}
 				case MUX: {
 					string colon, third;
 					stream >> colon >> third;
-					*verilogFile << "\t" << "MUX #(" << size << ") mux_" << numMuxs << "(" << first << ", " << second << ", " << third << ", "<< seg1 << ");" << endl;  //TODO change to verilog file
+					string validStr = checkValid(third, inputs, outputs, wires);
+					if (validStr != "good") {
+						cout << validStr;
+						netlistFile.close();
+						verilogFile->close();
+						return 0;
+					}
+					*verilogFile << "MUX #(" << size << ") mux_" << numMuxs << "(" << first << ", " << second << ", " << third << ", "<< seg1 << ");" << endl;  //TODO change to verilog file
 					numMuxs++;
 					break;
 				}
 				case REG: {
-					*verilogFile << "\t" << "REG #(" << size << ") reg_" << numRegs << "(" << "Clk, Rst, " << first << ", " << seg1 << ");" << endl;
+					*verilogFile << "REG #(" << size << ") reg_" << numRegs << "(" << "Clk, Rst, " << first << ", " << seg1 << ");" << endl;
 					numRegs++;
 					break;
+				}
+				case BAD: {
+					cout << "ERROR: invalid operator" << endl;
+					netlistFile.close();
+					verilogFile->close();
+					return 0;
 				}
 			}
 		}
 	}
 	writeModuleClosing(verilogFile);
 
+	/*
 	for (unsigned int i = 0; i < inputs.size(); i++) {
 		cout << inputs.at(i).toString() << endl;
 	}
@@ -203,6 +247,7 @@ int main(int argc, char* argv[]){
 	for (unsigned int i = 0; i < wires.size(); i++) {
 		cout << wires.at(i).toString() << endl;
 	}
+	*/
 
 	netlistFile.close();
 	verilogFile->close();
@@ -372,4 +417,29 @@ void writeModuleHeading(vector<Input> inputs, vector<Output> outputs, shared_ptr
 
 void writeModuleClosing(shared_ptr<ofstream> verilogFile) {
 	*verilogFile << "endmodule" << endl;
+}
+
+string checkValid(string varName, vector<Input> inputs, vector<Output> outputs, vector<Wire> wires) {
+	bool found = false;
+	for (unsigned int i = 0; i < inputs.size(); i++) {
+		if (inputs[i].name == varName) {
+			found = true;
+		}
+	}
+	for (unsigned int i = 0; i < outputs.size(); i++) {
+		if (outputs[i].name == varName) {
+			found = true;
+		}
+	}
+	for (unsigned int i = 0; i < wires.size(); i++) {
+		if (wires[i].name == varName) {
+			found = true;
+		}
+	}
+	if (!found) {
+		return "missing variable";
+	}
+	else {
+		return "good";
+	}
 }
