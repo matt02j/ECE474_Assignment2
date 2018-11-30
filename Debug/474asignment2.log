@@ -1,8 +1,5 @@
-﻿  474asignment2.cpp
-c:\users\mcjohnson\documents\ece474_assignment2\474asignment2.cpp(82): warning C4018: '<': signed/unsigned mismatch
-c:\users\mcjohnson\documents\ece474_assignment2\474asignment2.cpp(90): warning C4018: '<': signed/unsigned mismatch
-c:\users\mcjohnson\documents\ece474_assignment2\474asignment2.cpp(151): warning C4018: '<': signed/unsigned mismatch
-c:\users\mcjohnson\documents\ece474_assignment2\474asignment2.cpp(154): warning C4018: '<': signed/unsigned mismatch
-c:\users\mcjohnson\documents\ece474_assignment2\474asignment2.cpp(157): warning C4018: '<': signed/unsigned mismatch
+﻿  Scheduler.cpp
+  474asignment2.cpp
+  Generating Code...
   474asignment2.vcxproj -> C:\Users\MCJohnson\Documents\ECE474_Assignment2\Debug\474asignment2.exe
   474asignment2.vcxproj -> C:\Users\MCJohnson\Documents\ECE474_Assignment2\Debug\474asignment2.pdb (Partial PDB)

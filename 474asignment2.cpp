@@ -20,6 +20,7 @@
 #include <vector>
 #include <memory>
 #include "types.h"
+#include "Scheduler.h"
 
 using namespace std;
 
@@ -33,6 +34,7 @@ void writeWireInits(vector<Wire> wires, shared_ptr<ofstream> verilogFile);
 void writeModuleHeading(vector<Input> inputs, vector<Output> outputs, shared_ptr<ofstream> verilogFile, string moduleName);
 void writeModuleClosing(shared_ptr<ofstream> verilogFile);
 string checkValid(string varName, vector<Input> inputs, vector<Output> outputs, vector<Wire> wires);
+Variable findByName(string name, vector<Input> *in, vector<Output> *out, vector<Wire>* wire);
 
 int main(int argc, char* argv[]){
 	 string netlistFileName, verilogFileName;
@@ -43,6 +45,7 @@ int main(int argc, char* argv[]){
 	 vector<Input> inputs;
 	 vector<Output> outputs;
 	 vector<Wire> wires;
+	 vector<Operation> operations;
 	 string moduleName = "outputModule";
 
 	 int numAdders=0;
@@ -124,6 +127,7 @@ int main(int argc, char* argv[]){
 					}
 				}
 			}
+
 			/*
 			if (size == 0) {
 				cerr << "Unable to find output " << seg1 << endl;
@@ -157,7 +161,22 @@ int main(int argc, char* argv[]){
 					}
 				}
 			}
+			//cover to Operation objects for the graph
+			Variable in1, in2, in3, out;
+			in1 = findByName(first,&inputs,&outputs,&wires);
+			in2 = findByName(second, &inputs, &outputs, &wires);
+			out = findByName(seg1, &inputs, &outputs, &wires);
+			if (myop == MUX) {
+				string colon, third;
+				stream >> colon >> third;
+				in3 = findByName(third, &inputs, &outputs, &wires);
+				operations.push_back(*(new Operation(in1,in2,in3,out)));
+			}
+			else {
 
+				operations.push_back(*(new Operation(in1, in2, out)));
+			}
+/*
 			*verilogFile << "\t";
 			if (isSigned) {
 				*verilogFile << "S";
@@ -232,9 +251,10 @@ int main(int argc, char* argv[]){
 					verilogFile->close();
 					return 0;
 				}
-			}
+			}*/
 		}
 	}
+	
 	writeModuleClosing(verilogFile);
 
 	/*
@@ -253,7 +273,9 @@ int main(int argc, char* argv[]){
 	verilogFile->close();
     return 0;
 }
-
+Variable findByName(string name, vector<Input> *in, vector<Output> *out, vector<Wire>* wire) {
+	//TODO return the apropriate wire/input/output
+}
 void parseInputs(stringstream *stream, vector<Input> *inputs){
 	string type;
 	string name;
