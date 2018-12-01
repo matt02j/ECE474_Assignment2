@@ -2,9 +2,8 @@ input Int32 a, b, c
 
 output Int32 z, x
 
-wire Int32 d, e, f, g, h
-wire Int1 dLTe, dEQe  
-wire Int32 zwire, xwire
+variable Int32 d, e, f, g, h
+variable UInt1 dLTe, dEQe  
 
 d = a + b
 e = a + c
@@ -13,7 +12,5 @@ dEQe = d == e
 dLTe = d < e
 g = dLTe ? d : e 
 h = dEQe ? g : f 
-xwire = g << dLTe
-zwire = h >> dEQe
-x = xwire
-z = zwire
+x = g << dLTe
+z = h >> dEQe

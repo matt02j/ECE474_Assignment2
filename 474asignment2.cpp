@@ -34,7 +34,7 @@ void writeWireInits(vector<Wire> wires, shared_ptr<ofstream> verilogFile);
 void writeModuleHeading(vector<Input> inputs, vector<Output> outputs, shared_ptr<ofstream> verilogFile, string moduleName);
 void writeModuleClosing(shared_ptr<ofstream> verilogFile);
 string checkValid(string varName, vector<Input> inputs, vector<Output> outputs, vector<Wire> wires);
-Variable findByName(string name, vector<Input> *in, vector<Output> *out, vector<Wire>* wire);
+Variable* findByName(string name, vector<Input> *in, vector<Output> *out, vector<Wire>* wire);
 
 int main(int argc, char* argv[]){
 	 string netlistFileName, verilogFileName;
@@ -47,6 +47,7 @@ int main(int argc, char* argv[]){
 	 vector<Wire> wires;
 	 vector<Operation> operations;
 	 string moduleName = "outputModule";
+	 Variable *in1, *in2, *in3, *out;
 
 	 int numAdders=0;
 	 int numComps=0;
@@ -57,8 +58,8 @@ int main(int argc, char* argv[]){
 	 int numLShifts=0;
 	 int numRegs = 0;
 
-	if (argc != 3) {
-		cout << "Usage: dpgen netlistFile verilogFile"<<endl;
+	if (argc != 4) {
+		cout << "Usage: hlsyn cFile latency verilogFile"<<endl;
 		return 1;
 	}
 	netlistFileName = argv[1];
@@ -88,7 +89,7 @@ int main(int argc, char* argv[]){
 		else if (seg1 == "output") { //output declaration
 			parseOutputs(&stream, &outputs);
 		}
-		else if (seg1 == "wire" || seg1 == "register") { //wire declaration
+		else if (seg1 == "variable" ){ //|| seg1 == "register") { //wire declaration
 			parseWires(&stream, &wires);
 		}
 		else { //assignment
@@ -162,7 +163,6 @@ int main(int argc, char* argv[]){
 				}
 			}
 			//cover to Operation objects for the graph
-			Variable in1, in2, in3, out;
 			in1 = findByName(first,&inputs,&outputs,&wires);
 			in2 = findByName(second, &inputs, &outputs, &wires);
 			out = findByName(seg1, &inputs, &outputs, &wires);
@@ -174,7 +174,7 @@ int main(int argc, char* argv[]){
 			}
 			else {
 
-				operations.push_back(*(new Operation(in1, in2, out)));
+ 				operations.push_back(*(new Operation(in1, in2, out)));
 			}
 /*
 			*verilogFile << "\t";
@@ -254,7 +254,10 @@ int main(int argc, char* argv[]){
 			}*/
 		}
 	}
-	
+	schedule(&operations, 7);	
+	for (int i = 0; i < operations.size(); i++) {
+		cout << operations.at(i).in1->name <<" "<< operations.at(i).in2->name <<" "<< operations.at(i).out->name << "\tasap: " << operations.at(i).asap << "\talap:"<< operations.at(i).alap << endl;
+	}
 	writeModuleClosing(verilogFile);
 
 	/*
@@ -273,8 +276,24 @@ int main(int argc, char* argv[]){
 	verilogFile->close();
     return 0;
 }
-Variable findByName(string name, vector<Input> *in, vector<Output> *out, vector<Wire>* wire) {
+Variable* findByName(string name, vector<Input> *in, vector<Output> *out, vector<Wire>* wire) {
 	//TODO return the apropriate wire/input/output
+	for (int i = 0; i < in->size(); i++) {
+		if (in->at(i) == name) {
+			return &(in->at(i));
+		}
+	}
+	for (int i = 0; i < out->size(); i++) {
+		if (out->at(i) == name) {
+			return &(out->at(i));
+		}
+	}
+	for (int i = 0; i < wire->size(); i++) {
+		if (wire->at(i) == name) {
+			return &(wire->at(i));
+		}
+	}
+	return NULL;
 }
 void parseInputs(stringstream *stream, vector<Input> *inputs){
 	string type;
