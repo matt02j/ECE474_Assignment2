@@ -2,7 +2,7 @@
 #include "types.h"
 #include <vector>
 
-void schedule(vector<Operation> *ops,int latency) {
+void schedule(vector<Operation> *ops,int latency, int resources[3]) {
 	//build dependency
 	//asap
 	//alap
@@ -10,10 +10,100 @@ void schedule(vector<Operation> *ops,int latency) {
 	buildDependencyGraph(ops);
 	asap(ops, latency);
 	alap(ops, latency);
-
-	
+	listr(ops, latency, resources);
 }
-
+void listr(vector<Operation>* ops, int latency, int resources[3]) {
+	bool good = true;
+	vector<Operation*> candidates,add,mul,logic;
+	vector<Operation*> *x;
+	resources[0] = 1; resources[1] = 1; resources[2] = 1;
+	int inUse[3] = { 0,0,0 };
+	int curr = 1,scheduled=0;
+	for (int i = 0; i < ops->size(); i++) {
+		switch (ops->at(i).op) {
+		case ADD:
+		case SUB:
+			add.push_back(&(ops->at(i)));
+			break;
+		case MUL:
+			mul.push_back(&(ops->at(i)));
+			break;
+		default:
+			logic.push_back(&(ops->at(i)));
+			break;
+		}
+	}
+	while (scheduled < ops->size()) { //figure out termination condition
+		for (int r = 0; r < 3; r++) { //r is resource, 0 is ADD/SUB, 1 is MUL, 2 is everything else/LOGIC
+			candidates.clear();
+			inUse[r] = 0;
+			//determin candidates
+			switch (r) {
+			case 0:
+				x = &add;
+				break;
+			case 1:
+				x = &mul;
+				break;
+			case 2:
+				x = &logic;
+				break;
+			}
+			for (int i = 0; i < x->size(); i++) {
+				good = true;
+				for (int j = 0; j < x->at(i)->iDependOn.size(); j++) {
+					if (x->at(i)->iDependOn.at(j)->listr == -1 || x->at(i)->iDependOn.at(j)->listrEnd >= curr) {
+						good = false;
+						break;
+					}
+				}
+				if (good && x->at(i)->listr == -1) {
+					candidates.push_back(x->at(i));
+				}
+			}
+			
+			//for each candidate
+				//compute slack (alap - current)
+				//schedule those with no slack, update num resources if necesary
+			for (int i = 0; i < candidates.size(); i++) {
+				int slack = candidates.at(i)->alap - curr;
+				if (slack == 0) {
+					candidates.at(i)->listr = curr;
+					if (r == 1) {
+						candidates.at(i)->listrEnd = curr+1;
+					}
+					else {
+						candidates.at(i)->listrEnd = curr;
+					}
+					candidates.erase(candidates.begin() + i);
+					scheduled++;
+					inUse[r]++;
+					if (inUse[r] > resources[r]) {
+						resources[r]++;
+					}
+				}
+			}
+			//fill empty resources is possible
+			for (int i = 0; i < resources[r] - inUse[r]; i++) {
+				if (candidates.size() == 0) {
+					break;
+				}
+				else {
+					candidates.at(i)->listr = curr;
+					if (r == 1) {
+						candidates.at(i)->listrEnd = curr + 1;
+					}
+					else {
+						candidates.at(i)->listrEnd = curr;
+					}
+					candidates.erase(candidates.begin() + i);
+					scheduled++;
+				}
+			}
+		}
+		curr++;
+	}
+}
 void asap(vector<Operation> *ops, int latency) {
 	//for each node
 		//if no dependencies

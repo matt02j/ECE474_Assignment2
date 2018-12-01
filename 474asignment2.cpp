@@ -170,94 +170,23 @@ int main(int argc, char* argv[]){
 				string colon, third;
 				stream >> colon >> third;
 				in3 = findByName(third, &inputs, &outputs, &wires);
-				operations.push_back(*(new Operation(in1,in2,in3,out)));
+				operations.push_back(*(new Operation(in1,in2,in3,out,myop)));
 			}
 			else {
 
- 				operations.push_back(*(new Operation(in1, in2, out)));
+ 				operations.push_back(*(new Operation(in1, in2, out,myop)));
 			}
-/*
-			*verilogFile << "\t";
-			if (isSigned) {
-				*verilogFile << "S";
-			}
-			switch (myop) {
-				case ADD: {
-					*verilogFile << "ADD #(" << size <<") adder_"<< numAdders<<"(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
-					numAdders++;
-					break;
-				}
-				case SUB: {
-					*verilogFile << "SUB #(" << size << ") sub_" << numSubs << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
-					numSubs++;
-					break;
-				}
-				case MUL: {
-					*verilogFile << "MUL #(" << size << ") mul_" << numAdders << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
-					numMuls++;
-					break;
-				}
-				case DIV: {
-					//turns out we dont need this for 474
-					break;
-				}
-				case GT: {
-					*verilogFile << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << ", , ," << seg1 << ");" << endl;  //is this legal? probably not
-					numComps++;
-					break;
-				}
-				case LT: {
-					*verilogFile << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << "," << seg1 << ", , );" << endl;  //is this legal? probably not
-					numComps++;
-					break;
-				}
-				case EQ: {
-					*verilogFile << "COMP #(" << size << ") comp_" << numComps << "(" << first << ", " << second << ", ," << seg1 << ", );" << endl;  //is this legal? probably not
-					numComps++;
-					break;
-				}
-				case RSHIFT: {
-					*verilogFile << "SHR #(" << size << ") shr_" << numRShifts << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
-					numRShifts++;
-					break;
-				}
-				case LSHIFT: {
-					*verilogFile << "SHL #(" << size << ") mul_" << numLShifts << "(" << first << ", " << second << ", " << seg1 << ");" << endl;  //TODO change to verilog file
-					numLShifts++;
-					break;
-				}
-				case MUX: {
-					string colon, third;
-					stream >> colon >> third;
-					string validStr = checkValid(third, inputs, outputs, wires);
-					if (validStr != "good") {
-						cout << validStr;
-						netlistFile.close();
-						verilogFile->close();
-						return 0;
-					}
-					*verilogFile << "MUX #(" << size << ") mux_" << numMuxs << "(" << first << ", " << second << ", " << third << ", "<< seg1 << ");" << endl;  //TODO change to verilog file
-					numMuxs++;
-					break;
-				}
-				case REG: {
-					*verilogFile << "REG #(" << size << ") reg_" << numRegs << "(" << "Clk, Rst, " << first << ", " << seg1 << ");" << endl;
-					numRegs++;
-					break;
-				}
-				case BAD: {
-					cout << "ERROR: invalid operator" << endl;
-					netlistFile.close();
-					verilogFile->close();
-					return 0;
-				}
-			}*/
 		}
 	}
-	schedule(&operations, 7);	
-	for (int i = 0; i < operations.size(); i++) {
-		cout << operations.at(i).in1->name <<" "<< operations.at(i).in2->name <<" "<< operations.at(i).out->name << "\tasap: " << operations.at(i).asap << "\talap:"<< operations.at(i).alap << endl;
+	int resources[3];
+	schedule(&operations, 7, resources); //replace 7 with the actual latency
+
+
+/*	for (int i = 0; i < operations.size(); i++) {
+		cout << operations.at(i).in1->name <<" "<< operations.at(i).in2->name <<" "<< operations.at(i).out->name << "\tasap: " << operations.at(i).asap << "\talap:"<< operations.at(i).alap <<"\t list: "<< operations.at(i).listr << endl;
 	}
+	cout << "resouces " << resources[0] << resources[1]<< resources[2] << endl;
+*/
 	writeModuleClosing(verilogFile);
 
 	/*

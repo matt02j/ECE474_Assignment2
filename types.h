@@ -64,22 +64,24 @@ class Operation {
 public:
 	OPS op;
 	Variable *in1, *in2, *in3, *out;
-	int alap,asap, listr;
+	int alap,asap, listr,listrEnd;
 	vector<Operation*> iDependOn,dependOnMe;
-	Operation(Variable *in1, Variable *in2, Variable *out) {
+	Operation(Variable *in1, Variable *in2, Variable *out,OPS op) {
 		this->in1 = in1;
 		this->in2 = in2;
 		this->in3 = NULL;
 		this->out = out;
+		this->op = op;
 		alap = -1;
 		asap = -1;
 		listr = -1;
 	}
-	Operation(Variable *in1, Variable *in2, Variable *in3, Variable *out) {
+	Operation(Variable *in1, Variable *in2, Variable *in3, Variable *out, OPS op) {
 		this->in1 = in1;
 		this->in2 = in2;
 		this->in3 = in3;
 		this->out = out;
+		this->op = op;
 		alap = -1;
 		asap = -1;
 		listr = -1;
