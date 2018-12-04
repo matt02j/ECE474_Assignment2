@@ -1,0 +1,52 @@
+module HLSM (Clk, Rst, Start, Done, a, b, c, z, x);
+	input Clk, Rst, Start;
+	input [15:0] a;
+	input [15:0] b;
+	input [15:0] c;
+	output reg Done;
+	output [7:0] z;
+	output [15:0] x;
+	wire [7:0] d;
+	wire [7:0] e;
+	wire [7:0] f;
+	wire [7:0] g;
+	reg state, NextState;
+
+	always @ (posedge Clk) begin
+		if (Rst == 1) begin
+			state <= Wait;
+		end
+		else begin
+			state <= NextState;
+		end
+	end
+
+	always @ (state) begin
+		case(state)
+			Wait: begin
+				if (Start == 1)
+					NextState <= 0;
+				else
+					NextState <= Wait;
+			end
+			1: begin
+				d = a + b;
+				f = a * c;
+				NextState <= 2;
+			end
+			2: begin
+				e = a + c;
+				NextState <= 3;
+			end
+			3: begin
+				g = d < e;
+				x = f - d;
+				NextState <= 4;
+			end
+			4: begin
+				z = g ? d : e;
+				NextState <= Wait;
+			end
+		endcase
+	end
+endmodule

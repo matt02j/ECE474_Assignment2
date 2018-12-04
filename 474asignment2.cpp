@@ -32,6 +32,7 @@ void writeInputInits(vector<Input> inputs, shared_ptr<ofstream> verilogFile);
 void writeOutputInits(vector<Output> outputs, shared_ptr<ofstream> verilogFile);
 void writeWireInits(vector<Wire> wires, shared_ptr<ofstream> verilogFile);
 void writeModuleHeading(vector<Input> inputs, vector<Output> outputs, shared_ptr<ofstream> verilogFile, string moduleName);
+void writeModuleAlwaysBlocks(shared_ptr<ofstream> verilogFile);
 void writeModuleClosing(shared_ptr<ofstream> verilogFile);
 string checkValid(string varName, vector<Input> inputs, vector<Output> outputs, vector<Wire> wires);
 Variable* findByName(string name, vector<Input> *in, vector<Output> *out, vector<Wire>* wire);
@@ -46,8 +47,9 @@ int main(int argc, char* argv[]){
 	 vector<Output> outputs;
 	 vector<Wire> wires;
 	 vector<Operation> operations;
-	 string moduleName = "outputModule";
+	 string moduleName = "HLSM";
 	 Variable *in1, *in2, *in3, *out;
+	 int latency = 0;
 
 	 int numAdders=0;
 	 int numComps=0;
@@ -62,8 +64,10 @@ int main(int argc, char* argv[]){
 		cout << "Usage: hlsyn cFile latency verilogFile"<<endl;
 		return 1;
 	}
+
 	netlistFileName = argv[1];
-	verilogFileName = argv[2];
+	latency = atoi(argv[2]);
+	verilogFileName = argv[3];
 
 
 	netlistFile.open(netlistFileName);
@@ -179,14 +183,69 @@ int main(int argc, char* argv[]){
 		}
 	}
 	int resources[3];
-	schedule(&operations, 7, resources); //replace 7 with the actual latency
+	schedule(&operations, latency, resources); //replace 7 with the actual latency
 
+	writeModuleAlwaysBlocks(verilogFile);
 
-/*	for (int i = 0; i < operations.size(); i++) {
-		cout << operations.at(i).in1->name <<" "<< operations.at(i).in2->name <<" "<< operations.at(i).out->name << "\tasap: " << operations.at(i).asap << "\talap:"<< operations.at(i).alap <<"\t list: "<< operations.at(i).listr << endl;
+	for (int i = 1; i <= latency; i++) {
+		*verilogFile << "\t\t\t" << i << ": begin" << endl;
+
+		for (int j = 0; j < operations.size(); j++) {
+			if (operations.at(j).listr == i) {
+				*verilogFile << "\t\t\t\t" << operations.at(j).out->name << " = " << operations.at(j).in1->name;
+				if (operations.at(j).op == 0)
+					*verilogFile << " + ";
+				else if (operations.at(j).op == 1)
+					*verilogFile << " - ";
+				else if (operations.at(j).op == 2)
+					*verilogFile << " * ";
+				else if (operations.at(j).op == 3)
+					*verilogFile << " / ";
+				else if (operations.at(j).op == 4)
+					*verilogFile << " ? ";
+				else if (operations.at(j).op == 5)
+					*verilogFile << " << ";
+				else if (operations.at(j).op == 6)
+					*verilogFile << " >> ";
+				else if (operations.at(j).op == 7)
+					*verilogFile << " < ";
+				else if (operations.at(j).op == 8)
+					*verilogFile << " > ";
+				else if (operations.at(j).op == 9)
+					*verilogFile << " == ";
+				else if (operations.at(j).op == 10)
+					*verilogFile << " - ";
+
+				*verilogFile << operations.at(j).in2->name;
+				if (operations.at(j).in3) {
+					*verilogFile << " : " << operations.at(j).in3->name << ";" << endl;
+				}
+				else {
+					*verilogFile << ";" << endl;
+				}
+			}
+		}
+
+		if (i == latency) {
+			*verilogFile << "\t\t\t\t" << "NextState <= Wait;" << endl;
+		}
+		else {
+			*verilogFile << "\t\t\t\t" << "NextState <= " << i+1 << ";" << endl;
+		}
+		*verilogFile << "\t\t\tend" << endl;
+
 	}
-	cout << "resouces " << resources[0] << resources[1]<< resources[2] << endl;
-*/
+
+	*verilogFile << "\t\tendcase" << endl;
+	*verilogFile << "\tend" << endl;
+
+
+	
+	/*for (int i = 0; i < operations.size(); i++) {
+		*verilogFile << operations.at(i).in1->name << " " << operations.at(i).in2->name << " " << operations.at(i).out->name << "\tasap: " << operations.at(i).asap << "\talap:" << operations.at(i).alap << "\t list: " << operations.at(i).listr << endl;
+	}*/
+	//cout << "resouces " << resources[0] << resources[1]<< resources[2] << endl;
+	
 	writeModuleClosing(verilogFile);
 
 	/*
@@ -339,7 +398,7 @@ OPS parseOp(string myop) {
 }
 
 void writeInputInits(vector<Input> inputs, shared_ptr<ofstream> verilogFile) {
-	*verilogFile << "\t" << "input Clk, Rst;" << endl;
+	*verilogFile << "\t" << "input Clk, Rst, Start;" << endl;
 	for (unsigned int i = 0; i < inputs.size(); i++) {
 		if (inputs[i].name.size() > 0) {
 			*verilogFile << "\t" << "input [" << inputs[i].size - 1 << ":0] " << inputs[i].name << ";" << endl;
@@ -348,6 +407,7 @@ void writeInputInits(vector<Input> inputs, shared_ptr<ofstream> verilogFile) {
 }
 
 void writeOutputInits(vector<Output> outputs, shared_ptr<ofstream> verilogFile) {
+	*verilogFile << "\t" << "output reg Done;" << endl;
 	for (unsigned int i = 0; i < outputs.size(); i++) {
 		if (outputs[i].name.size() > 0) {
 			*verilogFile << "\t" << "output [" << outputs[i].size - 1 << ":0] " << outputs[i].name << ";" << endl;
@@ -361,10 +421,11 @@ void writeWireInits(vector<Wire> wires, shared_ptr<ofstream> verilogFile) {
 			*verilogFile << "\t" << "wire [" << wires[i].size - 1 << ":0] " << wires[i].name << ";" << endl;
 		}
 	}
+	*verilogFile << "\t" << "reg state, NextState;" << endl << endl;
 }
 
 void writeModuleHeading(vector<Input> inputs, vector<Output> outputs, shared_ptr<ofstream> verilogFile, string moduleName) {
-	*verilogFile << "module " << moduleName << "(";
+	*verilogFile << "module " << moduleName << " (Clk, Rst, Start, Done, ";
 	for (unsigned int i = 0; i < inputs.size(); i++) {
 		if (inputs[i].name.size() > 0) {
 			*verilogFile << inputs[i].name;
@@ -383,6 +444,28 @@ void writeModuleHeading(vector<Input> inputs, vector<Output> outputs, shared_ptr
 	}
 
 	*verilogFile << ");" << endl;
+}
+
+void writeModuleAlwaysBlocks(shared_ptr<ofstream> verilogFile) {
+	//always block for clk
+	*verilogFile << "\t" << "always @ (posedge Clk) begin" << endl;
+	*verilogFile << "\t\t" << "if (Rst == 1) begin" << endl;
+	*verilogFile << "\t\t\t" << "state <= Wait;" << endl;
+	*verilogFile << "\t\t" << "end" << endl;
+	*verilogFile << "\t\t" << "else begin" << endl;
+	*verilogFile << "\t\t\t" << "state <= NextState;" << endl;
+	*verilogFile << "\t\t" << "end" << endl;
+	*verilogFile << "\t" << "end" << endl << endl;
+
+
+	//Starting State Machine
+	*verilogFile << "\t" << "always @ (state) begin" << endl;
+	*verilogFile << "\t\t" << "case(state)" << endl;
+
+	*verilogFile << "\t\t\t" << "Wait: begin" << endl;
+	*verilogFile << "\t\t\t\t" << "if (Start == 1)" << endl << "\t\t\t\t\t" << "NextState <= 0;" << endl;
+	*verilogFile << "\t\t\t\t" << "else" << endl << "\t\t\t\t\t" << "NextState <= Wait;" << endl;
+	*verilogFile << "\t\t\t" << "end" << endl;
 }
 
 void writeModuleClosing(shared_ptr<ofstream> verilogFile) {

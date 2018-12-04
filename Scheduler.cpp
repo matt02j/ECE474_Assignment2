@@ -15,7 +15,7 @@ void schedule(vector<Operation> *ops,int latency, int resources[3]) {
 void listr(vector<Operation>* ops, int latency, int resources[3]) {
 	bool good = true;
 	vector<Operation*> candidates,add,mul,logic;
-	vector<Operation*> *x;
+	vector<Operation*> *x = NULL;
 	resources[0] = 1; resources[1] = 1; resources[2] = 1;
 	int inUse[3] = { 0,0,0 };
 	int curr = 1,scheduled=0;

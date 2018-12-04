@@ -3,7 +3,7 @@ input Int32 a, b, c
 output Int32 z, x
 
 variable Int32 d, e, f, g, h
-variable UInt1 dLTe, dEQe  
+variable UInt1 dLTe, dEQe
 
 d = a + b
 e = a + c
