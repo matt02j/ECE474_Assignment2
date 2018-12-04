@@ -192,7 +192,7 @@ int main(int argc, char* argv[]){
 
 		for (int j = 0; j < operations.size(); j++) {
 			if (operations.at(j).listr == i) {
-				*verilogFile << "\t\t\t\t" << operations.at(j).out->name << " = " << operations.at(j).in1->name;
+				*verilogFile << "\t\t\t\t" << operations.at(j).out->name << " <= " << operations.at(j).in1->name;
 				if (operations.at(j).op == 0)
 					*verilogFile << " + ";
 				else if (operations.at(j).op == 1)
@@ -227,12 +227,14 @@ int main(int argc, char* argv[]){
 		}
 
 		if (i == latency) {
-			*verilogFile << "\t\t\t\t" << "NextState <= Wait;" << endl;
+			*verilogFile << "\t\t\t\t" << "NextState <= Done;" << endl;
 		}
 		else {
 			*verilogFile << "\t\t\t\t" << "NextState <= " << i+1 << ";" << endl;
 		}
 		*verilogFile << "\t\t\tend" << endl;
+		*verilogFile << "\t\t\tDone: begin" << endl;
+		*verilogFile << "\t\t\t\t" << "NextState <= Wait;" << endl;
 
 	}
 
