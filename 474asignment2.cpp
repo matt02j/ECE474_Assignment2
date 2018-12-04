@@ -227,16 +227,19 @@ int main(int argc, char* argv[]){
 		}
 
 		if (i == latency) {
-			*verilogFile << "\t\t\t\t" << "NextState <= Done;" << endl;
+			*verilogFile << "\t\t\t\t" << "NextState <= Final;" << endl;
 		}
 		else {
 			*verilogFile << "\t\t\t\t" << "NextState <= " << i+1 << ";" << endl;
 		}
 		*verilogFile << "\t\t\tend" << endl;
-		*verilogFile << "\t\t\tDone: begin" << endl;
-		*verilogFile << "\t\t\t\t" << "NextState <= Wait;" << endl;
+		
 
 	}
+	*verilogFile << "\t\t\tFinal: begin" << endl;
+	*verilogFile << "\t\t\t\t" << "NextState <= Wait;" << endl;
+	*verilogFile << "\t\t\t\t" << "Done <=  1;" << endl;
+	*verilogFile << "\t\t\tend" << endl;
 
 	*verilogFile << "\t\tendcase" << endl;
 	*verilogFile << "\tend" << endl;
