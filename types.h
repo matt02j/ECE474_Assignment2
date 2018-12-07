@@ -3,7 +3,7 @@
 #include <string>
 using namespace std;
 
-enum OPS { ADD, SUB, MUL, DIV, MUX, LSHIFT, RSHIFT, GT, LT, EQ, REG, BAD};
+enum OPS { ADD, SUB, MUL, DIV, MUX, LSHIFT, RSHIFT, GT, LT, EQ, REG, BAD, IF};
 
 class Variable {
 public:

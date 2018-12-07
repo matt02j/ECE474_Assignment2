@@ -77,13 +77,18 @@ int main(int argc, char* argv[]){
 	//convert to cdfg
 
 	bool finishedInits = false;
-	while (!(netlistFile.eof())) {
+	std::shared_ptr<Operation> currIfBlock = NULL;
+	while (getline(netlistFile, buffer)) {
+		std::cout << buffer << std::endl;
 		seg1.clear();
-		buffer.clear();
+		//buffer.clear();
 		stream.clear();
-		getline(netlistFile, buffer);
+		//getline(netlistFile, buffer);
 		stream << buffer;
 		stream >> seg1;
+		while (seg1 == "\t") {
+			stream >> seg1;
+		}
 		if (seg1 == "//" || seg1 == "") { //comment
 			continue;
 		}
@@ -96,7 +101,7 @@ int main(int argc, char* argv[]){
 		else if (seg1 == "variable" ){ //|| seg1 == "register") { //wire declaration
 			parseWires(&stream, &wires);
 		}
-		else { //assignment
+		else if (seg1 != "}"){ //assignment
 			if (!finishedInits) {
 				writeModuleHeading(inputs, outputs, verilogFile, moduleName);
 				writeInputInits(inputs, verilogFile);
@@ -104,83 +109,109 @@ int main(int argc, char* argv[]){
 				writeWireInits(wires, verilogFile);
 				finishedInits = true;
 			}
-
-			string op, assign, first, second;
-			stream >> assign >> first;
-
-			//OPS myop;
-			/*if (stream.eof()) {
-				myop = REG;
-			}*/
-			stream >> op >> second;
-			OPS myop = parseOp(op);
-			int size=0;
-			bool isSigned=false;
-			for (unsigned int i = 0; i < outputs.size(); i++) {
-				if (outputs.at(i).name == seg1) {
-					size = outputs.at(i).size;
-					isSigned = outputs.at(i).isSigned;
-					break;
-				}
+			if (seg1 == "if") {
+				string ifBuffer, condition;
+				stream >> ifBuffer;
+				stream >> condition;
+				std::cout << condition << std::endl;
+				in1 = findByName(condition, &inputs, &outputs, &wires);
+				OPS myOp = OPS::IF;
+				currIfBlock = std::shared_ptr<Operation>(new Operation(in1,NULL,NULL,NULL,myOp));
+				operations.push_back(*currIfBlock);
+				stream >> ifBuffer;
+				stream >> ifBuffer;
 			}
-			if (size == 0) {
-				for (unsigned int i = 0; i < wires.size(); i++) {
-					if (wires.at(i).name == seg1) {
-						size = wires.at(i).size;
-						isSigned = wires.at(i).isSigned;
+
+			else {
+				string op, assign, first, second;
+				stream >> assign >> first;
+
+				//OPS myop;
+				/*if (stream.eof()) {
+					myop = REG;
+				}*/
+				stream >> op >> second;
+				OPS myop = parseOp(op);
+				int size=0;
+				bool isSigned=false;
+				for (unsigned int i = 0; i < outputs.size(); i++) {
+					if (outputs.at(i).name == seg1) {
+						size = outputs.at(i).size;
+						isSigned = outputs.at(i).isSigned;
 						break;
 					}
 				}
-			}
-
-			/*
-			if (size == 0) {
-				cerr << "Unable to find output " << seg1 << endl;
-				return 1;
-			}
-			*/
-
-			if (myop != BAD) {
-				string validStr = "good";
-				validStr = checkValid(first, inputs, outputs, wires);
-				if (validStr != "good") {
-					cout << validStr;
-					netlistFile.close();
-					verilogFile->close();
-					return 0;
+				if (size == 0) {
+					for (unsigned int i = 0; i < wires.size(); i++) {
+						if (wires.at(i).name == seg1) {
+							size = wires.at(i).size;
+							isSigned = wires.at(i).isSigned;
+							break;
+						}
+					}
 				}
-				validStr = checkValid(seg1, inputs, outputs, wires);
-				if (validStr != "good") {
-					cout << validStr;
-					netlistFile.close();
-					verilogFile->close();
-					return 0;
+
+				/*
+				if (size == 0) {
+					cerr << "Unable to find output " << seg1 << endl;
+					return 1;
 				}
-				if (myop != REG) {
-					validStr = checkValid(second, inputs, outputs, wires);
+				*/
+				if (myop != BAD) {
+					string validStr = "good";
+					validStr = checkValid(first, inputs, outputs, wires);
 					if (validStr != "good") {
 						cout << validStr;
 						netlistFile.close();
 						verilogFile->close();
 						return 0;
 					}
+					validStr = checkValid(seg1, inputs, outputs, wires);
+					if (validStr != "good") {
+						cout << validStr;
+						netlistFile.close();
+						verilogFile->close();
+						return 0;
+					}
+					if (myop != REG) {
+						validStr = checkValid(second, inputs, outputs, wires);
+						if (validStr != "good") {
+							cout << validStr;
+							netlistFile.close();
+							verilogFile->close();
+							return 0;
+						}
+					}
+				}
+				//cover to Operation objects for the graph
+				in1 = findByName(first,&inputs,&outputs,&wires);
+				in2 = findByName(second, &inputs, &outputs, &wires);
+				out = findByName(seg1, &inputs, &outputs, &wires);
+				if (myop == MUX) {
+					string colon, third;
+					stream >> colon >> third;
+					in3 = findByName(third, &inputs, &outputs, &wires);
+					auto newOperation = std::shared_ptr<Operation>(new Operation(in1,in2,in3,out,myop));
+					if (currIfBlock != nullptr) {
+						newOperation->iDependOn.push_back(&*currIfBlock);
+						currIfBlock->dependOnMe.push_back(&*newOperation);
+					}
+					operations.push_back(*newOperation);
+				}
+				else {
+					auto newOperation = std::shared_ptr<Operation>(new Operation(in1,in2,out,myop));
+					if (currIfBlock != nullptr) {
+						newOperation->iDependOn.push_back(&*currIfBlock);
+						currIfBlock->dependOnMe.push_back(&*newOperation);
+					}
+					operations.push_back(*newOperation);
 				}
 			}
-			//cover to Operation objects for the graph
-			in1 = findByName(first,&inputs,&outputs,&wires);
-			in2 = findByName(second, &inputs, &outputs, &wires);
-			out = findByName(seg1, &inputs, &outputs, &wires);
-			if (myop == MUX) {
-				string colon, third;
-				stream >> colon >> third;
-				in3 = findByName(third, &inputs, &outputs, &wires);
-				operations.push_back(*(new Operation(in1,in2,in3,out,myop)));
-			}
-			else {
-
- 				operations.push_back(*(new Operation(in1, in2, out,myop)));
-			}
 		}
+		else {
+			currIfBlock = NULL;
+		}
+		buffer.clear();
 	}
 	int resources[3];
 	schedule(&operations, latency, resources); //replace 7 with the actual latency
@@ -190,7 +221,7 @@ int main(int argc, char* argv[]){
 	for (int i = 1; i <= latency; i++) {
 		*verilogFile << "\t\t\t" << i << ": begin" << endl;
 
-		for (int j = 0; j < operations.size(); j++) {
+		for (unsigned int j = 0; j < operations.size(); j++) {
 			if (operations.at(j).listr == i) {
 				*verilogFile << "\t\t\t\t" << operations.at(j).out->name << " <= " << operations.at(j).in1->name;
 				if (operations.at(j).op == 0)
@@ -271,17 +302,17 @@ int main(int argc, char* argv[]){
 }
 Variable* findByName(string name, vector<Input> *in, vector<Output> *out, vector<Wire>* wire) {
 	//TODO return the apropriate wire/input/output
-	for (int i = 0; i < in->size(); i++) {
+	for (unsigned int i = 0; i < in->size(); i++) {
 		if (in->at(i) == name) {
 			return &(in->at(i));
 		}
 	}
-	for (int i = 0; i < out->size(); i++) {
+	for (unsigned int i = 0; i < out->size(); i++) {
 		if (out->at(i) == name) {
 			return &(out->at(i));
 		}
 	}
-	for (int i = 0; i < wire->size(); i++) {
+	for (unsigned int i = 0; i < wire->size(); i++) {
 		if (wire->at(i) == name) {
 			return &(wire->at(i));
 		}
@@ -495,7 +526,9 @@ string checkValid(string varName, vector<Input> inputs, vector<Output> outputs, 
 		}
 	}
 	if (!found) {
-		return "missing variable";
+		stringstream stream;
+		stream << "missing variable " << varName << " |";
+		return stream.str();
 	}
 	else {
 		return "good";
