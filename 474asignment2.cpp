@@ -77,7 +77,7 @@ int main(int argc, char* argv[]){
 	//convert to cdfg
 
 	bool finishedInits = false;
-	std::shared_ptr<Operation> currIfBlock = NULL;
+	Operation* currIfBlock = NULL;
 	while (getline(netlistFile, buffer)) {
 		std::cout << buffer << std::endl;
 		seg1.clear();
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]){
 				std::cout << condition << std::endl;
 				in1 = findByName(condition, &inputs, &outputs, &wires);
 				OPS myOp = OPS::IF;
-				currIfBlock = std::shared_ptr<Operation>(new Operation(in1,NULL,NULL,NULL,myOp));
+				currIfBlock = new Operation(in1,NULL,NULL,NULL,myOp);
 				operations.push_back(*currIfBlock);
 				stream >> ifBuffer;
 				stream >> ifBuffer;
@@ -191,16 +191,16 @@ int main(int argc, char* argv[]){
 					string colon, third;
 					stream >> colon >> third;
 					in3 = findByName(third, &inputs, &outputs, &wires);
-					auto newOperation = std::shared_ptr<Operation>(new Operation(in1,in2,in3,out,myop));
-					if (currIfBlock != nullptr) {
+					auto newOperation = new Operation(in1,in2,in3,out,myop);
+					if (currIfBlock != NULL) {
 						newOperation->iDependOn.push_back(&*currIfBlock);
 						currIfBlock->dependOnMe.push_back(&*newOperation);
 					}
 					operations.push_back(*newOperation);
 				}
 				else {
-					auto newOperation = std::shared_ptr<Operation>(new Operation(in1,in2,out,myop));
-					if (currIfBlock != nullptr) {
+					auto newOperation = new Operation(in1,in2,out,myop);
+					if (currIfBlock != NULL) {
 						newOperation->iDependOn.push_back(&*currIfBlock);
 						currIfBlock->dependOnMe.push_back(&*newOperation);
 					}

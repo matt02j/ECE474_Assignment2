@@ -10,7 +10,7 @@ void schedule(vector<Operation> *ops,int latency, int resources[3]) {
 	//listr
 	buildDependencyGraph(ops);
 	asap(ops, latency);
-	alap(ops, latency);std::cout << "progress" << std::endl;
+	alap(ops, latency);
 	listr(ops, latency, resources);
 }
 void listr(vector<Operation>* ops, int latency, int resources[3]) {
@@ -33,8 +33,10 @@ void listr(vector<Operation>* ops, int latency, int resources[3]) {
 			logic.push_back(&(ops->at(i)));
 			break;
 		}
+
 	}
 	while (scheduled < ops->size()) { //figure out termination condition
+		std::cout << "progress - " << scheduled << " / " << ops->size() << std::endl;
 		for (int r = 0; r < 3; r++) { //r is resource, 0 is ADD/SUB, 1 is MUL, 2 is everything else/LOGIC
 			candidates.clear();
 			inUse[r] = 0;
@@ -54,6 +56,7 @@ void listr(vector<Operation>* ops, int latency, int resources[3]) {
 				good = true;
 				for (unsigned int j = 0; j < x->at(i)->iDependOn.size(); j++) {
 					if (x->at(i)->iDependOn.at(j)->listr == -1 || x->at(i)->iDependOn.at(j)->listrEnd >= curr) {
+						std::cout << "breaking" << std::endl;
 						good = false;
 						break;
 					}
@@ -102,7 +105,7 @@ void listr(vector<Operation>* ops, int latency, int resources[3]) {
 				}
 			}
 		}
-		curr++;
+		curr++;std::cout << "progress finished" << std::endl;
 	}
 }
 void asap(vector<Operation> *ops, int latency) {
@@ -139,18 +142,14 @@ void alap(vector<Operation>* ops, int latency) {
 	}
 }
 int alap1(Operation *op, int cycle) {
-std::cout << "progress" << std::endl;
 	if (cycle < 0) {
 		//ERROR
-		std::cout << "Error" << std::endl;
 		return 1;
 	}
 	if (op->alap > cycle || op->alap==-1) {
 		op->alap = cycle;
 		for (unsigned int i = 0; i < op->iDependOn.size(); i++) {
-			std::cout << "1" << std::endl;
 			alap1(op->iDependOn.at(i), cycle - 1);
-			std::cout << "2" << std::endl;
 		}
 	}
 	return 0;
@@ -164,13 +163,20 @@ void buildDependencyGraph(vector<Operation> *ops) {
 
 	for(unsigned int o = 0; o < ops->size(); o++) {
 		for (unsigned int p = o + 1; p < ops->size(); p++) {
-			if (ops->at(p).out == ops->at(o).in1 || ops->at(p).out == ops->at(o).in2 || ops->at(p).out == ops->at(o).in3) {
-				ops->at(o).iDependOn.push_back(&ops->at(p));
-				ops->at(p).dependOnMe.push_back(&ops->at(o));
+
+			if (ops->at(o).op != IF) {
+				if (ops->at(p).out == ops->at(o).in1 || ops->at(p).out == ops->at(o).in2 || ops->at(p).out == ops->at(o).in3) {
+					ops->at(o).iDependOn.push_back(&ops->at(p));
+					ops->at(p).dependOnMe.push_back(&ops->at(o));
+				}
 			}
-			if (ops->at(o).out == ops->at(p).in1 || ops->at(o).out == ops->at(p).in2 || ops->at(o).out == ops->at(p).in3) {
-				ops->at(p).iDependOn.push_back(&ops->at(o));
-				ops->at(o).dependOnMe.push_back(&ops->at(p));
+
+
+			if (ops->at(p).op != IF) {
+				if (ops->at(o).out == ops->at(p).in1 || ops->at(o).out == ops->at(p).in2 || ops->at(o).out == ops->at(p).in3) {
+					ops->at(p).iDependOn.push_back(&ops->at(o));
+					ops->at(o).dependOnMe.push_back(&ops->at(p));
+				}
 			}
 		}
 	}
